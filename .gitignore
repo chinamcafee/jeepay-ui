@@ -54,3 +54,9 @@ unpackage/
 # [package-lock.json。 已放开，请添加到假定未更改文件 ]
 # package-lock.json
 /.history/
+
+# [macOS 本地元数据]
+.DS_Store
+
+# [本项目统一使用 npm/package-lock.json，忽略本地 pnpm 锁文件]
+pnpm-lock.yaml
