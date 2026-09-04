@@ -33,7 +33,23 @@
               <a-select-option value="1">退款中</a-select-option>
               <a-select-option value="2">退款成功</a-select-option>
               <a-select-option value="3">退款失败</a-select-option>
+              <a-select-option value="4">任务关闭</a-select-option>
+              <a-select-option value="5">退款已撤销</a-select-option>
             </a-select>
+            <a-select
+              v-model:value="vdata.searchData.refundOrigin"
+              class="table-head-layout"
+              placeholder="退款来源"
+            >
+              <a-select-option value="">全部</a-select-option>
+              <a-select-option value="1">商户发起</a-select-option>
+              <a-select-option value="2">渠道产生</a-select-option>
+            </a-select>
+            <jeepay-text-up
+              v-model:value="vdata.searchData.providerEventId"
+              placeholder="渠道事件 ID"
+            />
+            <jeepay-text-up v-model:value="vdata.searchData.refundType" placeholder="退款类型" />
 
             <span class="table-page-search-submitButtons">
               <a-button type="primary" @click="queryFunc" :loading="vdata.btnLoading">
@@ -73,38 +89,29 @@
           </template>
           <!-- 自定义插槽 -->
           <template v-if="column.key === 'refundAmount'">
-            <b>￥{{ record.refundAmount / 100 }}</b>
+            <template v-if="Number(record.refundOrigin) === 2">
+              <div>
+                <b>名义：</b>
+                {{ nominalAmountText(record.refundAmount, record.currency) }}
+              </div>
+              <div class="apple-secondary">
+                <b>渠道：</b>
+                {{ channelRefundAmountText(record) }}
+              </div>
+            </template>
+            <b v-else>￥{{ record.refundAmount / 100 }}</b>
           </template>
           <!-- 自定义插槽 -->
           <template v-if="column.key === 'state'">
-            <div>
-              <a-tag
-                :key="record.state"
-                :color="
-                  record.state === 0
-                    ? 'blue'
-                    : record.state === 1
-                      ? 'orange'
-                      : record.state === 2
-                        ? 'green'
-                        : 'volcano'
-                "
-              >
-                {{
-                  record.state === 0
-                    ? '订单生成'
-                    : record.state === 1
-                      ? '退款中'
-                      : record.state === 2
-                        ? '退款成功'
-                        : record.state === 3
-                          ? '退款失败'
-                          : record.state === 4
-                            ? '任务关闭'
-                            : '未知'
-                }}
-              </a-tag>
-            </div>
+            <a-tag :key="record.state" :color="refundStateMeta(record.state)[1]">
+              {{ refundStateMeta(record.state)[0] }}
+            </a-tag>
+          </template>
+          <template v-if="column.key === 'refundOrigin'">
+            <a-tag :color="Number(record.refundOrigin) === 2 ? 'purple' : 'blue'">
+              {{ refundOriginText(record.refundOrigin) }}
+            </a-tag>
+            <div v-if="record.refundType" class="apple-secondary">{{ record.refundType }}</div>
           </template>
 
           <template v-if="column.key === 'pay'">
@@ -161,6 +168,13 @@
                 @click="detailFunc(record.refundOrderId)"
               >
                 详情
+              </a-button>
+              <a-button
+                v-if="Number(record.refundOrigin) === 2 && $access('ENT_APPLE_IAP_TX_VIEW')"
+                type="link"
+                @click="openAppleTransaction(record)"
+              >
+                Apple 交易
               </a-button>
             </JeepayTableColumns>
           </template>
@@ -260,6 +274,59 @@
               </a-descriptions-item>
             </a-descriptions>
           </a-col>
+          <template v-if="Number(vdata.detailData.refundOrigin) === 2">
+            <a-divider>渠道退款事实</a-divider>
+            <a-col :sm="12">
+              <a-descriptions>
+                <a-descriptions-item label="退款来源">
+                  <a-tag color="purple">
+                    {{ refundOriginText(vdata.detailData.refundOrigin) }}
+                  </a-tag>
+                </a-descriptions-item>
+              </a-descriptions>
+            </a-col>
+            <a-col :sm="12">
+              <a-descriptions>
+                <a-descriptions-item label="渠道实际退款">
+                  {{ channelRefundAmountText(vdata.detailData) }}
+                </a-descriptions-item>
+              </a-descriptions>
+            </a-col>
+            <a-col :sm="12">
+              <a-descriptions>
+                <a-descriptions-item label="退款类型 / 比例">
+                  {{ vdata.detailData.refundType || '-' }} /
+                  {{ formatRevocationPercentage(vdata.detailData.revocationPercentage) }}
+                </a-descriptions-item>
+              </a-descriptions>
+            </a-col>
+            <a-col :sm="12">
+              <a-descriptions>
+                <a-descriptions-item label="渠道事件 ID">
+                  <a-typography-paragraph
+                    :copyable="{ text: vdata.detailData.providerEventId }"
+                    class="copyable-id"
+                  >
+                    {{ vdata.detailData.providerEventId || '-' }}
+                  </a-typography-paragraph>
+                </a-descriptions-item>
+              </a-descriptions>
+            </a-col>
+            <a-col :sm="12">
+              <a-descriptions>
+                <a-descriptions-item label="撤销原因">
+                  {{ vdata.detailData.revocationReason || '-' }}
+                </a-descriptions-item>
+              </a-descriptions>
+            </a-col>
+            <a-col :sm="12">
+              <a-descriptions>
+                <a-descriptions-item label="退款撤销时间">
+                  {{ vdata.detailData.reversedTime || '-' }}
+                </a-descriptions-item>
+              </a-descriptions>
+            </a-col>
+          </template>
           <a-col :sm="12">
             <a-descriptions>
               <a-descriptions-item label="订单状态">
@@ -409,8 +476,16 @@
 import { API_URL_REFUND_ORDER_LIST, req } from '@/api/manage'
 import dayjs from 'dayjs'
 import { reactive, getCurrentInstance, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import {
+  channelRefundAmountText,
+  nominalAmountText,
+  refundOriginText,
+  refundStateMeta,
+} from '../appleIapCommonOrderUi'
 
 const { $infoBox, $access } = getCurrentInstance()!.appContext.config.globalProperties
+const router = useRouter()
 
 const tableColumns = [
   { key: 'payAmount', title: '支付金额', scopedSlots: { customRender: 'payAmountSlot' } },
@@ -431,7 +506,8 @@ const tableColumns = [
   // { key: 'mchRefundNo', title: '商户退款单号', dataIndex: 'mchRefundNo' },
   // { key: 'payOrderId', title: '支付订单号', dataIndex: 'payOrderId' },
   // { key: 'channelPayOrderNo', title: '渠道订单号', dataIndex: 'channelPayOrderNo' },
-  { key: 'state', title: '支付状态', scopedSlots: { customRender: 'stateSlot' } },
+  { key: 'state', title: '退款状态', scopedSlots: { customRender: 'stateSlot' } },
+  { key: 'refundOrigin', title: '退款来源 / 类型', width: 145 },
   { key: 'createdAt', dataIndex: 'createdAt', title: '创建日期' },
   {
     key: 'op',
@@ -473,6 +549,20 @@ function detailFunc(recordId) {
   })
   vdata.open = true
 }
+function openAppleTransaction(record) {
+  router.push({
+    path: '/apple-iap',
+    query: {
+      appId: record.appId,
+      tab: 'transactions',
+      payOrderId: record.payOrderId,
+    },
+  })
+}
+function formatRevocationPercentage(value) {
+  const numeric = Number(value)
+  return Number.isFinite(numeric) ? `${(numeric / 1000).toFixed(3)}%` : '-'
+}
 function onChange(date, dateString) {
   vdata.searchData.createdStart = dateString[0] // 开始时间
   vdata.searchData.createdEnd = dateString[1] // 结束时间
@@ -513,5 +603,12 @@ function changeStr2ellipsis(orderNo, baseLength) {
       margin-right: 2px;
     }
   }
+}
+.apple-secondary,
+.copyable-id {
+  margin-bottom: 0;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
 </style>

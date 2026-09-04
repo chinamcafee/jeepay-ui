@@ -52,6 +52,27 @@
               <a-select-option value="5">已退款</a-select-option>
               <a-select-option value="6">订单关闭</a-select-option>
             </a-select>
+            <a-select
+              v-model:value="vdata.searchData.channelEnvironment"
+              placeholder="Apple 环境"
+              class="table-head-layout"
+            >
+              <a-select-option value="">全部</a-select-option>
+              <a-select-option value="SANDBOX">Sandbox</a-select-option>
+              <a-select-option value="PRODUCTION">Production</a-select-option>
+              <a-select-option value="XCODE_LOCAL">Xcode 本地</a-select-option>
+            </a-select>
+            <a-select
+              v-model:value="vdata.searchData.deliveryState"
+              placeholder="交付状态"
+              class="table-head-layout"
+            >
+              <a-select-option value="">全部</a-select-option>
+              <a-select-option value="0">不适用</a-select-option>
+              <a-select-option value="1">待交付</a-select-option>
+              <a-select-option value="2">已交付</a-select-option>
+              <a-select-option value="3">交付失败</a-select-option>
+            </a-select>
 
             <a-select
               v-model:value="vdata.searchData.divisionState"
@@ -98,7 +119,17 @@
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.key == 'amount'">
-            <b>￥{{ record.amount / 100 }}</b>
+            <template v-if="isAppleIapOrder(record)">
+              <div>
+                <b>名义：</b>
+                {{ nominalAmountText(record.amount, record.currency) }}
+              </div>
+              <div class="apple-secondary">
+                <b>渠道：</b>
+                {{ channelAmountText(record) }}
+              </div>
+            </template>
+            <b v-else>￥{{ record.amount / 100 }}</b>
           </template>
           <!-- 自定义插槽 -->
           <template v-if="column.key == 'refundAmount'">￥{{ record.refundAmount / 100 }}</template>
@@ -150,30 +181,55 @@
             <span v-else>未知</span>
           </template>
 
+          <template v-if="column.key == 'appleStates'">
+            <template v-if="isAppleIapOrder(record)">
+              <div>
+                <a-tag :color="deliveryStateMeta(record.deliveryState)[1]">
+                  {{ deliveryStateMeta(record.deliveryState)[0] }}
+                </a-tag>
+              </div>
+              <div>
+                <a-tag :color="finishStateMeta(record.finishState)[1]">
+                  {{ finishStateMeta(record.finishState)[0] }}
+                </a-tag>
+              </div>
+            </template>
+            <span v-else>-</span>
+          </template>
+
           <template v-if="column.key == 'orderNo'">
             <div class="order-list">
               <p>
-                <span style="color: #729ed5; background: #e7f5f7">支付</span>{{ record.payOrderId }}
+                <span style="color: #729ed5; background: #e7f5f7">支付</span>
+                {{ record.payOrderId }}
               </p>
               <p style="margin-bottom: 0">
-                <span style="color: #56cf56; background: #d8eadf">商户</span><a-tooltip
+                <span style="color: #56cf56; background: #d8eadf">商户</span>
+                <a-tooltip
                   placement="bottom"
                   style="font-weight: normal"
                   v-if="record.mchOrderNo.length > record.payOrderId.length"
                 >
                   <template slot="title">
                     <span>{{ record.mchOrderNo }}</span>
-                  </template>{{ changeStr2ellipsis(record.mchOrderNo, record.payOrderId.length) }}</a-tooltip><span style="font-weight: normal" v-else>{{ record.mchOrderNo }}</span>
+                  </template>
+                  {{ changeStr2ellipsis(record.mchOrderNo, record.payOrderId.length) }}
+                </a-tooltip>
+                <span style="font-weight: normal" v-else>{{ record.mchOrderNo }}</span>
               </p>
               <p v-if="record.channelOrderNo" style="margin-bottom: 0; margin-top: 10px">
-                <span style="color: #fff; background: #e09c4d">渠道</span><a-tooltip
+                <span style="color: #fff; background: #e09c4d">渠道</span>
+                <a-tooltip
                   placement="bottom"
                   style="font-weight: normal"
                   v-if="record.channelOrderNo.length > record.payOrderId.length"
                 >
                   <template slot="title">
                     <span>{{ record.channelOrderNo }}</span>
-                  </template>{{ changeStr2ellipsis(record.channelOrderNo, record.payOrderId.length) }}</a-tooltip><span style="font-weight: normal" v-else>{{ record.channelOrderNo }}</span>
+                  </template>
+                  {{ changeStr2ellipsis(record.channelOrderNo, record.payOrderId.length) }}
+                </a-tooltip>
+                <span style="font-weight: normal" v-else>{{ record.channelOrderNo }}</span>
               </p>
             </div>
           </template>
@@ -190,12 +246,25 @@
               </a-button>
               <a-button
                 type="link"
-                v-if="$access('ENT_PAY_ORDER_REFUND')"
+                v-if="$access('ENT_PAY_ORDER_REFUND') && !isAppleIapOrder(record)"
                 style="color: red"
                 v-show="record.state === 2 && record.refundState !== 2"
                 @click="openFunc(record, record.payOrderId)"
               >
                 退款
+              </a-button>
+              <a-tooltip
+                v-if="$access('ENT_PAY_ORDER_REFUND') && isAppleIapOrder(record)"
+                title="Apple IAP 不支持商户主动退款；退款由 App Store 事件同步"
+              >
+                <a-button type="link" disabled>退款</a-button>
+              </a-tooltip>
+              <a-button
+                v-if="isAppleIapOrder(record) && $access('ENT_APPLE_IAP_TX_VIEW')"
+                type="link"
+                @click="openAppleTransaction(record)"
+              >
+                Apple 交易
               </a-button>
             </JeepayTableColumns>
           </template>
@@ -305,6 +374,50 @@
               </a-descriptions-item>
             </a-descriptions>
           </a-col>
+          <template v-if="isAppleIapOrder(vdata.detailData)">
+            <a-divider>Apple IAP 渠道事实</a-divider>
+            <a-col :sm="12">
+              <a-descriptions>
+                <a-descriptions-item label="名义金额">
+                  {{ nominalAmountText(vdata.detailData.amount, vdata.detailData.currency) }}
+                </a-descriptions-item>
+              </a-descriptions>
+            </a-col>
+            <a-col :sm="12">
+              <a-descriptions>
+                <a-descriptions-item label="渠道实际金额">
+                  {{ channelAmountText(vdata.detailData) }}
+                </a-descriptions-item>
+              </a-descriptions>
+            </a-col>
+            <a-col :sm="12">
+              <a-descriptions>
+                <a-descriptions-item label="Apple 商品 / 环境">
+                  {{ vdata.detailData.channelProductId || '-' }} /
+                  {{ vdata.detailData.channelEnvironment || '-' }}
+                </a-descriptions-item>
+              </a-descriptions>
+            </a-col>
+            <a-col :sm="12">
+              <a-descriptions>
+                <a-descriptions-item label="交付 / Finish">
+                  <a-tag :color="deliveryStateMeta(vdata.detailData.deliveryState)[1]">
+                    {{ deliveryStateMeta(vdata.detailData.deliveryState)[0] }}
+                  </a-tag>
+                  <a-tag :color="finishStateMeta(vdata.detailData.finishState)[1]">
+                    {{ finishStateMeta(vdata.detailData.finishState)[0] }}
+                  </a-tag>
+                </a-descriptions-item>
+              </a-descriptions>
+            </a-col>
+            <a-col :sm="24">
+              <a-alert
+                type="info"
+                show-icon
+                message="Apple IAP 不支持商户主动退款；退款与撤销由 App Store 渠道事实同步。"
+              />
+            </a-col>
+          </template>
           <a-col :sm="12">
             <a-descriptions>
               <a-descriptions-item label="手续费">
@@ -510,8 +623,17 @@ import RefundModal from './RefundModal.vue' // 退款弹出框
 import { API_URL_PAY_ORDER_LIST, API_URL_PAYWAYS_LIST, req } from '@/api/manage'
 import moment from 'moment'
 import { reactive, ref, getCurrentInstance, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import {
+  channelAmountText,
+  deliveryStateMeta,
+  finishStateMeta,
+  isAppleIapOrder,
+  nominalAmountText,
+} from '../appleIapCommonOrderUi'
 
 const { $infoBox, $access } = getCurrentInstance()!.appContext.config.globalProperties
+const router = useRouter()
 
 // eslint-disable-next-line no-unused-vars
 const tableColumns = [
@@ -532,6 +654,12 @@ const tableColumns = [
     title: '分账状态',
     scopedSlots: { customRender: 'divisionStateSlot' },
     align: 'center',
+  },
+  {
+    key: 'appleStates',
+    title: 'Apple 交付 / Finish',
+    align: 'center',
+    width: 150,
   },
   { key: 'createdAt', dataIndex: 'createdAt', title: '创建日期' },
   {
@@ -578,10 +706,24 @@ function searchFunc() {
 }
 // 打开退款弹出框
 function openFunc(record, recordId) {
+  if (isAppleIapOrder(record)) {
+    return $infoBox.modalError('Apple IAP 不支持商户主动退款', '退款由 App Store 事件同步')
+  }
   if (record.refundState === 2) {
     return $infoBox.modalError('订单无可退款金额', '')
   }
   refundModalInfo.value.show(recordId)
+}
+function openAppleTransaction(record) {
+  router.push({
+    path: '/apple-iap',
+    query: {
+      appId: record.appId,
+      tab: 'transactions',
+      transactionId: record.appleTransactionId || record.channelOrderNo,
+      payOrderId: record.payOrderId,
+    },
+  })
 }
 function detailFunc(recordId) {
   req.getById(API_URL_PAY_ORDER_LIST, recordId).then((res) => {
@@ -643,5 +785,11 @@ function changeStr2ellipsis(orderNo, baseLength) {
       margin-right: 2px;
     }
   }
+}
+.apple-secondary {
+  margin-top: 4px;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
 </style>

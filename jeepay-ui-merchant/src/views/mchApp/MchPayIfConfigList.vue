@@ -45,6 +45,12 @@
                 {{ record.ifName }}
               </div>
               <a-badge
+                v-if="record.ifCode === 'apple_iap'"
+                :status="appleIapBadgeStatus(record.appleIapConfig)"
+                :text="appleIapStatusText(record.appleIapConfig)"
+              />
+              <a-badge
+                v-else
                 :status="record.ifConfigState === 1 ? 'processing' : 'error'"
                 :text="record.ifConfigState === 1 ? '启用' : '未开通'"
               />
@@ -63,7 +69,14 @@
                 <a-icon key="right" type="right" style="font-size: 13px" />
               </a>
 
-              <a v-if="$access('ENT_MCH_PAY_CONFIG_ADD')" @click="editPayIfConfigFunc(record)">
+              <a
+                v-if="
+                  record.ifCode === 'apple_iap'
+                    ? $access('ENT_APPLE_IAP_CONFIG_VIEW')
+                    : $access('ENT_MCH_PAY_CONFIG_ADD')
+                "
+                @click="editPayIfConfigFunc(record)"
+              >
                 填写参数
                 <a-icon key="right" type="right" style="font-size: 13px" />
               </a>
@@ -156,6 +169,8 @@
     <WxpayPayConfig ref="wxpayPayConfig" :callback-func="refCardList" />
     <!-- 支付参数配置自定义页面组件 alipay  -->
     <AlipayPayConfig ref="alipayPayConfig" :callback-func="refCardList" />
+    <!-- Apple IAP 一等通道专用配置页面 -->
+    <AppleIapPayConfig ref="appleIapPayConfig" :callback-func="refCardList" />
     <!-- 支付通道配置页面组件  -->
     <MchPayPassageAddOrEdit ref="mchPayPassageAddOrEdit" :callback-func="searchFunc" />
     <!-- 支付宝授权弹层  -->
@@ -169,11 +184,13 @@ import {
   API_URL_MCH_PAYPASSAGE_LIST,
   req,
   getAvailablePayInterfaceList,
+  getAppleIapConfig,
 } from '@/api/manage'
 import MchPayConfigAddOrEdit from './MchPayConfigAddOrEdit.vue'
 import MchPayPassageAddOrEdit from './MchPayPassageAddOrEdit.vue'
 import WxpayPayConfig from './custom/WxpayPayConfig.vue'
 import AlipayPayConfig from './custom/AlipayPayConfig.vue'
+import AppleIapPayConfig from './custom/AppleIapPayConfig.vue'
 import AlipayAuth from './AlipayAuth.vue'
 import { reactive, ref, getCurrentInstance } from 'vue'
 const { $infoBox, $access } = getCurrentInstance()!.appContext.config.globalProperties
@@ -199,6 +216,7 @@ const mchPayConfigAddOrEdit = ref()
 const mchPayPassageAddOrEdit = ref()
 const wxpayPayConfig = ref()
 const alipayPayConfig = ref()
+const appleIapPayConfig = ref()
 const alipayAuthPage = ref()
 
 const vdata: any = reactive({
@@ -228,8 +246,19 @@ function stepChange(current) {
   vdata.currentStep = current
 }
 // 请求支付接口定义数据
-function reqCardListFunc() {
-  return req.list(API_URL_MCH_PAYCONFIGS_LIST, { appId: vdata.appId })
+async function reqCardListFunc() {
+  const records = await req.list(API_URL_MCH_PAYCONFIGS_LIST, { appId: vdata.appId })
+  const appleRecord = records && records.find((item) => item.ifCode === 'apple_iap')
+  if (appleRecord && $access('ENT_APPLE_IAP_CONFIG_VIEW')) {
+    try {
+      appleRecord.appleIapConfig = await getAppleIapConfig(vdata.appId)
+    } catch (error: any) {
+      appleRecord.appleIapConfig = {
+        unavailable: !String(error && (error.msg || error.message) || '').toUpperCase().includes('NOT_FOUND'),
+      }
+    }
+  }
+  return records
 }
 // 刷新支付接口card列表
 function refCardList() {
@@ -250,13 +279,13 @@ function searchFunc(isToFirst = false) {
 function editPayIfConfigFunc(record) {
   if (!record) return
 
-  console.log(record.configPageType, 'record.configPageType', record.ifCode)
-
   if (record.subMchIsvConfig === 0) {
     $infoBox.message.error({
       title: '提示',
       content: '当前应用所属商户为特约商户，请先配置服务商支付参数！',
     })
+  } else if (record.ifCode === 'apple_iap') {
+    appleIapPayConfig.value.show(vdata.appId, record)
   } else if (record.configPageType === 1) {
     mchPayConfigAddOrEdit.value.show(vdata.appId, record)
   } else if (record.configPageType === 2) {
@@ -266,6 +295,21 @@ function editPayIfConfigFunc(record) {
       alipayPayConfig.value.show(vdata.appId, record)
     }
   }
+}
+function appleIapBadgeStatus(config) {
+  if (!config) return 'default'
+  if (config.unavailable || config.readinessState === 'ERROR') return 'error'
+  if (config.state === 'ENABLED' && config.readinessState === 'READY') return 'success'
+  return 'warning'
+}
+function appleIapStatusText(config) {
+  if (!config) return '无查看权限'
+  if (config.unavailable) return '状态不可用'
+  if (!config.appId) return '未配置'
+  if (config.readinessState === 'ERROR') return '凭证异常'
+  if (config.state === 'ENABLED' && config.readinessState === 'READY') return '可用'
+  if (config.readinessState === 'INCOMPLETE') return '待验证'
+  return '已停用'
 }
 // 支付通道配置
 function editPayPassageFunc(record) {

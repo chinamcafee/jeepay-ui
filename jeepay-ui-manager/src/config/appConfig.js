@@ -29,6 +29,7 @@ export const asyncRouteDefine = {
   'IsvListPage': { defaultPath: '/isv', component: () => import('@/views/isv/IsvList.vue')  }, // 服务商列表
   'MchListPage': { defaultPath: '/mch', component: () => import('@/views/mch/MchList.vue')  }, // 商户列表
   'MchAppPage': { defaultPath: '/apps', component: () => import ('@/views/mchApp/List.vue')  }, // 商户应用列表
+  'AppleIapCenterPage': { defaultPath: '/apple-iap', component: () => import('@/views/appleIap/AppleIapCenterPage.vue') }, // Apple IAP 中心
   'PayOrderListPage': { defaultPath: '/payOrder', component: () => import('@/views/order/pay/PayOrderList.vue')  }, // 支付订单列表
   'RefundOrderListPage': { defaultPath: '/refundOrder', component: () => import('@/views/order/refund/RefundOrderList.vue')  }, // 退款订单列表
   'TransferOrderListPage': { defaultPath: '/transferOrder', component: () => import('@/views/order/transfer/TransferOrderList.vue')  }, // 转账订单

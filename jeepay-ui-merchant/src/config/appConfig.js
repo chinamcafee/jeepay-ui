@@ -30,6 +30,10 @@ export const asyncRouteDefine = {
   RolePage: { defaultPath: '/roles', component: () => import('@/views/role/RolePage.vue') },
 
   MchAppPage: { defaultPath: '/apps', component: () => import('@/views/mchApp/List.vue') }, // 商户应用列表
+  AppleIapCenterPage: {
+    defaultPath: '/apple-iap',
+    component: () => import('@/views/appleIap/AppleIapCenterPage.vue'),
+  }, // Apple IAP 中心
   PayTestPage: { defaultPath: '/paytest', component: () => import('@/views/payTest/PayTest.vue') }, // 支付测试
   MchTransferPage: {
     defaultPath: '/doTransfer',

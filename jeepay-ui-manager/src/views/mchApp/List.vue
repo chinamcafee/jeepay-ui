@@ -74,7 +74,7 @@
               <a-button
                 v-if="$access('ENT_MCH_PAY_CONFIG_LIST') && record.state"
                 type="link"
-                @click="showPayIfConfigList(record.appId)"
+                @click="showPayIfConfigList(record)"
               >
                 支付配置
               </a-button>
@@ -179,9 +179,9 @@ function delFunc(appId) {
   })
 }
 
-function showPayIfConfigList(recordId) {
+function showPayIfConfigList(record) {
   // 支付参数配置
-  mchPayIfConfigListRef.value.show(recordId)
+  mchPayIfConfigListRef.value.show(record.appId, record.mchNo)
 }
 </script>
 

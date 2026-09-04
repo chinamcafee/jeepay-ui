@@ -305,3 +305,285 @@ export function resendDivision (recordId) {
     method: 'POST'
   })
 }
+
+/** Apple IAP 应用配置（Merchant 商户范围由后端登录态注入） **/
+const APPLE_IAP_CONFIG_URL = '/api/mch/appleIap/configs'
+
+function appleIapConfigRequest (options) {
+  return request.request(options, true, false, false)
+}
+
+export function getAppleIapConfig (appId) {
+  return appleIapConfigRequest({
+    url: APPLE_IAP_CONFIG_URL + '/' + encodeURIComponent(appId),
+    method: 'GET'
+  })
+}
+
+export function saveAppleIapConfig (appId, data) {
+  const safeData = Object.assign({}, data)
+  delete safeData.mchNo
+  return appleIapConfigRequest({
+    url: APPLE_IAP_CONFIG_URL + '/' + encodeURIComponent(appId),
+    method: 'PUT',
+    data: safeData
+  })
+}
+
+export function deleteAppleIapConfig (appId, rowVersion) {
+  return appleIapConfigRequest({
+    url: APPLE_IAP_CONFIG_URL + '/' + encodeURIComponent(appId),
+    method: 'DELETE',
+    params: { rowVersion }
+  })
+}
+
+export function rotateAppleIapPrivateKey (appId, file, issuerId, keyId, rowVersion) {
+  const body = new FormData()
+  body.append('p8File', file)
+  body.append('issuerId', issuerId)
+  body.append('keyId', keyId)
+  body.append('rowVersion', String(rowVersion))
+  return appleIapConfigRequest({
+    url: APPLE_IAP_CONFIG_URL + '/' + encodeURIComponent(appId) + '/keys',
+    method: 'POST',
+    data: body
+  })
+}
+
+export function rotateAppleIapNotificationToken (appId, data) {
+  const safeData = Object.assign({}, data)
+  delete safeData.mchNo
+  return appleIapConfigRequest({
+    url: APPLE_IAP_CONFIG_URL + '/' + encodeURIComponent(appId) + '/notificationTokens/rotate',
+    method: 'POST',
+    data: safeData
+  })
+}
+
+export function confirmAppleIapNotificationUrl (appId, data) {
+  const safeData = Object.assign({}, data)
+  delete safeData.mchNo
+  return appleIapConfigRequest({
+    url: APPLE_IAP_CONFIG_URL + '/' + encodeURIComponent(appId) + '/notificationUrls/confirm',
+    method: 'POST',
+    data: safeData
+  })
+}
+
+export function validateAppleIapConfig (appId) {
+  return appleIapConfigRequest({
+    url: APPLE_IAP_CONFIG_URL + '/' + encodeURIComponent(appId) + '/validate',
+    method: 'POST'
+  })
+}
+
+/** Apple IAP 商品映射（Merchant 商户范围由后端登录态注入） **/
+const APPLE_IAP_PRODUCT_URL = '/api/mch/appleIap/products'
+
+function merchantAppleProductData (appId, data) {
+  const safeData = Object.assign({}, data, { appId })
+  delete safeData.mchNo
+  return safeData
+}
+
+export function listAppleIapProducts (appId, params) {
+  const safeParams = merchantAppleProductData(appId, params)
+  return request.request({
+    url: APPLE_IAP_PRODUCT_URL,
+    method: 'GET',
+    params: safeParams
+  }, true, false, false)
+}
+
+export function getAppleIapProduct (appId, productMappingId) {
+  return request.request({
+    url: APPLE_IAP_PRODUCT_URL + '/' + encodeURIComponent(productMappingId),
+    method: 'GET',
+    params: { appId }
+  }, true, false, false)
+}
+
+export function createAppleIapProduct (appId, data) {
+  return request.request({
+    url: APPLE_IAP_PRODUCT_URL,
+    method: 'POST',
+    data: merchantAppleProductData(appId, data)
+  }, true, false, false)
+}
+
+export function updateAppleIapProduct (appId, productMappingId, data) {
+  return request.request({
+    url: APPLE_IAP_PRODUCT_URL + '/' + encodeURIComponent(productMappingId),
+    method: 'PUT',
+    data: merchantAppleProductData(appId, data)
+  }, true, false, false)
+}
+
+export function disableAppleIapProduct (appId, productMappingId, rowVersion) {
+  return request.request({
+    url: APPLE_IAP_PRODUCT_URL + '/' + encodeURIComponent(productMappingId) + '/disable',
+    method: 'POST',
+    data: { appId, rowVersion }
+  }, true, false, false)
+}
+
+export function deleteAppleIapProduct (appId, productMappingId, rowVersion) {
+  return request.request({
+    url: APPLE_IAP_PRODUCT_URL + '/' + encodeURIComponent(productMappingId),
+    method: 'DELETE',
+    data: { appId, rowVersion }
+  }, true, false, false)
+}
+
+export function previewAppleIapProductImport (appId, rows) {
+  return request.request({
+    url: APPLE_IAP_PRODUCT_URL + '/import/preview',
+    method: 'POST',
+    data: { appId, rows }
+  }, true, false, false)
+}
+
+export function commitAppleIapProductImport (appId, rows) {
+  return request.request({
+    url: APPLE_IAP_PRODUCT_URL + '/import/commit',
+    method: 'POST',
+    data: { appId, rows }
+  }, true, false, false)
+}
+
+/** Apple IAP 运营中心（Merchant 商户范围由后端登录态注入） **/
+const APPLE_IAP_OPERATIONS_URL = '/api/appleIap'
+
+function merchantAppleOpsParams (appId, params) {
+  const safeParams = Object.assign({}, params, { appId })
+  delete safeParams.mchNo
+  return safeParams
+}
+
+export function getAppleIapOverview (appId, environment) {
+  return request.request({
+    url: APPLE_IAP_OPERATIONS_URL + '/overview',
+    method: 'GET',
+    params: merchantAppleOpsParams(appId, { environment })
+  }, true, false, false)
+}
+
+export function listAppleIapTransactions (appId, params) {
+  return request.request({
+    url: APPLE_IAP_OPERATIONS_URL + '/transactions',
+    method: 'GET',
+    params: merchantAppleOpsParams(appId, params)
+  }, true, false, false)
+}
+
+export function getAppleIapTransaction (appId, id) {
+  return request.request({
+    url: APPLE_IAP_OPERATIONS_URL + '/transactions/' + encodeURIComponent(id),
+    method: 'GET',
+    params: merchantAppleOpsParams(appId)
+  }, true, false, false)
+}
+
+export function retryAppleIapTransactionVerification (appId, id, data) {
+  return request.request({
+    url: APPLE_IAP_OPERATIONS_URL + '/transactions/' + encodeURIComponent(id) + '/retryVerification',
+    method: 'POST',
+    params: merchantAppleOpsParams(appId),
+    data
+  }, true, false, false)
+}
+
+export function retryAppleIapTransactionFinish (appId, id, data) {
+  return request.request({
+    url: APPLE_IAP_OPERATIONS_URL + '/transactions/' + encodeURIComponent(id) + '/retryFinish',
+    method: 'POST',
+    params: merchantAppleOpsParams(appId),
+    data
+  }, true, false, false)
+}
+
+export function listAppleIapNotifications (appId, params) {
+  return request.request({
+    url: APPLE_IAP_OPERATIONS_URL + '/notifications',
+    method: 'GET',
+    params: merchantAppleOpsParams(appId, params)
+  }, true, false, false)
+}
+
+export function getAppleIapNotification (appId, id) {
+  return request.request({
+    url: APPLE_IAP_OPERATIONS_URL + '/notifications/' + encodeURIComponent(id),
+    method: 'GET',
+    params: merchantAppleOpsParams(appId)
+  }, true, false, false)
+}
+
+export function listAppleIapConsumptionRequests (appId, params) {
+  return request.request({
+    url: APPLE_IAP_OPERATIONS_URL + '/consumptionRequests',
+    method: 'GET',
+    params: merchantAppleOpsParams(appId, params)
+  }, true, false, false)
+}
+
+export function getAppleIapConsumptionRequest (appId, id) {
+  return request.request({
+    url: APPLE_IAP_OPERATIONS_URL + '/consumptionRequests/' + encodeURIComponent(id),
+    method: 'GET',
+    params: merchantAppleOpsParams(appId)
+  }, true, false, false)
+}
+
+export function listAppleIapJobs (appId, params) {
+  return request.request({
+    url: APPLE_IAP_OPERATIONS_URL + '/jobs',
+    method: 'GET',
+    params: merchantAppleOpsParams(appId, params)
+  }, true, false, false)
+}
+
+export function retryAppleIapJob (appId, id, data) {
+  return request.request({
+    url: APPLE_IAP_OPERATIONS_URL + '/jobs/' + encodeURIComponent(id) + '/retry',
+    method: 'POST',
+    params: merchantAppleOpsParams(appId),
+    data
+  }, true, false, false)
+}
+
+export function listAppleIapReconcileRuns (appId, params) {
+  return request.request({
+    url: APPLE_IAP_OPERATIONS_URL + '/reconcileRuns',
+    method: 'GET',
+    params: merchantAppleOpsParams(appId, params)
+  }, true, false, false)
+}
+
+export function createAppleIapReconcileRun (appId, data) {
+  return request.request({
+    url: APPLE_IAP_OPERATIONS_URL + '/reconcileRuns',
+    method: 'POST',
+    params: merchantAppleOpsParams(appId),
+    data
+  }, true, false, false)
+}
+
+export function rerunAppleIapReconcileRun (appId, id, data) {
+  return request.request({
+    url: APPLE_IAP_OPERATIONS_URL + '/reconcileRuns/' + encodeURIComponent(id) + '/rerun',
+    method: 'POST',
+    params: merchantAppleOpsParams(appId),
+    data
+  }, true, false, false)
+}
+
+export function downloadAppleIapSensitivePayload (appId, data) {
+  return request.request({
+    url: APPLE_IAP_OPERATIONS_URL + '/payloads/access',
+    method: 'POST',
+    params: merchantAppleOpsParams(appId),
+    data,
+    responseType: 'blob'
+  }, false, false, false)
+}
