@@ -1,5 +1,5 @@
 <template>
-  <a-modal
+  <a-modal wrap-class-name="apple-iap-ui apple-iap-dialog"
     v-model:open="vdata.open"
     :title="vdata.title"
     :confirm-loading="vdata.loading"

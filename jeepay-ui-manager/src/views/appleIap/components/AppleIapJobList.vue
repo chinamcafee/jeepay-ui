@@ -9,20 +9,36 @@
     <a-card class="section">
       <a-form layout="inline">
         <a-form-item label="环境">
-          <a-select v-model:value="vdata.filters.environment" allow-clear style="width: 130px">
+          <a-select
+            v-model:value="vdata.filters.environment"
+            placeholder="全部"
+            allow-clear
+            style="width: 130px"
+          >
             <a-select-option value="SANDBOX">Sandbox</a-select-option>
             <a-select-option value="PRODUCTION">Production</a-select-option>
           </a-select>
         </a-form-item>
         <a-form-item label="任务类型">
-          <a-select v-model:value="vdata.filters.type" allow-clear show-search style="width: 260px">
+          <a-select
+            v-model:value="vdata.filters.type"
+            placeholder="全部"
+            allow-clear
+            show-search
+            style="width: 260px"
+          >
             <a-select-option v-for="type in jobTypes" :key="type" :value="type">
               {{ type }}
             </a-select-option>
           </a-select>
         </a-form-item>
         <a-form-item label="状态">
-          <a-select v-model:value="vdata.filters.state" allow-clear style="width: 130px">
+          <a-select
+            v-model:value="vdata.filters.state"
+            placeholder="全部"
+            allow-clear
+            style="width: 130px"
+          >
             <a-select-option v-for="item in stateOptions" :key="item.value" :value="item.value">
               {{ item.label }}
             </a-select-option>

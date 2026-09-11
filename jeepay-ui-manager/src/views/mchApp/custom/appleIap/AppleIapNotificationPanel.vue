@@ -3,9 +3,22 @@
     <a-alert
       type="info"
       show-icon
-      message="通知 URL 必须由后端生成；复制到 App Store Connect 后再执行人工确认。"
+      message="先生成对应环境的通知 URL，复制到 App Store Connect 的 Server Notifications V2，再确认已配置。"
       class="section-alert"
     />
+    <a-descriptions bordered size="small" :column="1" class="section-alert">
+      <a-descriptions-item label="地址维护入口">
+        <router-link to="/config">系统配置 · Apple App 内购买</router-link>
+      </a-descriptions-item>
+      <a-descriptions-item label="通知基础地址格式">
+        HTTPS 域名后必须包含 /api/channel/apple-iap/notifications/v2，末尾不加斜杠。
+        点击生成后，系统自动追加通知令牌。
+      </a-descriptions-item>
+      <a-descriptions-item label="本机接入">
+        通知转发至 Jeepay Payment 的 9216 端口；App 确认经 Link-U Gateway。公网使用 HTTPS，frp
+        保留完整路径。
+      </a-descriptions-item>
+    </a-descriptions>
     <a-form layout="inline" class="grace-form">
       <a-form-item label="旧令牌兼容期（分钟）">
         <a-input-number
@@ -26,6 +39,12 @@
                 {{ environment.enabled ? '已启用' : '未启用' }}
               </a-tag>
             </a-descriptions-item>
+            <a-descriptions-item label="通知基础地址">
+              {{ environment.baseUrl || '请先在系统配置填写' }}
+            </a-descriptions-item>
+            <a-descriptions-item label="App 确认地址">
+              {{ environment.confirmUrl || '请先在系统配置填写' }}
+            </a-descriptions-item>
             <a-descriptions-item label="通知 URL">
               <span class="break-all">{{ environment.maskedUrl || '尚未生成' }}</span>
             </a-descriptions-item>
@@ -39,10 +58,10 @@
             <a-button
               danger
               :loading="loading"
-              :disabled="disabled || !environment.enabled"
+              :disabled="disabled || !environment.enabled || !environment.baseUrl"
               @click="$emit('rotate', environment.code, gracePeriodMinutes)"
             >
-              轮换通知令牌
+              {{ environment.maskedUrl ? '轮换通知 URL' : '生成通知 URL' }}
             </a-button>
             <a-button
               :loading="loading"
@@ -77,6 +96,7 @@ import { computed, ref } from 'vue'
 
 const props = defineProps({
   config: { type: Object, default: () => ({}) },
+  deployment: { type: Object, default: () => ({}) },
   oneTimeUrl: { type: Object, default: null },
   disabled: { type: Boolean, default: false },
   loading: { type: Boolean, default: false },
@@ -88,6 +108,8 @@ const environments = computed(() => [
     code: 'SANDBOX',
     label: 'Sandbox',
     enabled: !!props.config.sandboxEnabled,
+    baseUrl: props.deployment.sandboxNotificationPublicBaseUrl,
+    confirmUrl: props.deployment.sandboxConfirmPublicUrl,
     maskedUrl: props.config.sandboxNotificationUrlMasked,
     confirmedAt: props.config.sandboxNotificationConfirmedAt,
   },
@@ -95,6 +117,8 @@ const environments = computed(() => [
     code: 'PRODUCTION',
     label: 'Production',
     enabled: !!props.config.productionEnabled,
+    baseUrl: props.deployment.productionNotificationPublicBaseUrl,
+    confirmUrl: props.deployment.productionConfirmPublicUrl,
     maskedUrl: props.config.productionNotificationUrlMasked,
     confirmedAt: props.config.productionNotificationConfirmedAt,
   },

@@ -3,7 +3,12 @@
     <a-card class="section">
       <a-form layout="inline">
         <a-form-item label="环境">
-          <a-select v-model:value="vdata.filters.environment" allow-clear style="width: 130px">
+          <a-select
+            v-model:value="vdata.filters.environment"
+            placeholder="全部"
+            allow-clear
+            style="width: 130px"
+          >
             <a-select-option value="SANDBOX">Sandbox</a-select-option>
             <a-select-option value="PRODUCTION">Production</a-select-option>
           </a-select>
@@ -11,7 +16,7 @@
         <a-form-item label="关键词">
           <a-input
             v-model:value="vdata.filters.keyword"
-            :maxlength="128"
+            :maxlength="100"
             allow-clear
             placeholder="Apple / Jeepay / 商品 ID"
             @press-enter="search"
@@ -30,7 +35,12 @@
           <a-input v-model:value="vdata.filters.productId" :maxlength="128" allow-clear />
         </a-form-item>
         <a-form-item label="验证">
-          <a-select v-model:value="vdata.filters.state" allow-clear style="width: 130px">
+          <a-select
+            v-model:value="vdata.filters.state"
+            placeholder="全部"
+            allow-clear
+            style="width: 130px"
+          >
             <a-select-option
               v-for="option in verificationOptions"
               :key="option.value"
@@ -41,7 +51,12 @@
           </a-select>
         </a-form-item>
         <a-form-item label="交付">
-          <a-select v-model:value="vdata.filters.secondaryState" allow-clear style="width: 130px">
+          <a-select
+            v-model:value="vdata.filters.secondaryState"
+            placeholder="全部"
+            allow-clear
+            style="width: 130px"
+          >
             <a-select-option
               v-for="option in deliveryOptions"
               :key="option.value"
@@ -52,7 +67,12 @@
           </a-select>
         </a-form-item>
         <a-form-item label="Finish">
-          <a-select v-model:value="vdata.filters.tertiaryState" allow-clear style="width: 140px">
+          <a-select
+            v-model:value="vdata.filters.tertiaryState"
+            placeholder="全部"
+            allow-clear
+            style="width: 140px"
+          >
             <a-select-option
               v-for="option in finishOptions"
               :key="option.value"

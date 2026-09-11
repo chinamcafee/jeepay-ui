@@ -57,6 +57,9 @@
             {{ record[column.key] }}
           </a-typography-paragraph>
         </template>
+        <template v-else-if="column.key === 'productType'">
+          {{ record.productType === 'CONSUMABLE' ? '消耗型' : record.productType }}
+        </template>
         <template v-else-if="column.key === 'amount'">
           {{ record.nominalAmount }} {{ String(record.nominalCurrency || '').toUpperCase() }}
           <div class="minor-unit">货币最小单位</div>

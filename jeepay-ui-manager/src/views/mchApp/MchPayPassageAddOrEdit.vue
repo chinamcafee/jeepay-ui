@@ -156,7 +156,7 @@ function handleOkFunc() {
       const reg = /^(([1-9]{1}\d{0,1})|(0{1}))(\.\d{1,4})?$/
       // 状态开启则费率必填
       if (item.state) {
-        if (!item.rate) {
+        if (item.rate === undefined || item.rate === null || item.rate === '') {
           item.error = 'error'
           item.help = '请输入费率'
           throw new Error('error')

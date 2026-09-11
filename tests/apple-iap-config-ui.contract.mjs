@@ -69,6 +69,18 @@ for (const application of applications) {
   assertContains(list, "./custom/AppleIapPayConfig.vue", `${application.name} Apple drawer registration`)
 
   const drawer = source(`${application.directory}/src/views/mchApp/custom/AppleIapPayConfig.vue`)
+  const safeErrorBody = drawer.match(/function safeError\(error\) \{([\s\S]*?)\n\}/)?.[1]
+  assert.ok(safeErrorBody, 'safe error formatter exists')
+  const formatError = new Function('error', safeErrorBody)
+  for (const msg of [
+    'SECRET_PROVIDER_UNAVAILABLE: storage unavailable',
+    '系统异常[Apple IAP Secret/KMS provider is unavailable]',
+  ]) {
+    assert.equal(formatError({ msg }), '服务端密钥存储未配置或不可用，请管理员配置后重新选择 P8 文件上传。')
+  }
+  assert.equal(formatError({ message: 'SECRET_WRITE_FAILED: unavailable' }),
+    '服务端无法保存密钥，请管理员检查密钥存储权限与可用性后重试。')
+  assert.equal(formatError({ msg: 'VERSION_CONFLICT: stale' }), 'VERSION_CONFLICT: stale')
   const identityForm = source(
     `${application.directory}/src/views/mchApp/custom/appleIap/AppleIapIdentityForm.vue`
   )

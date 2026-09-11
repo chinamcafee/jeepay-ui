@@ -1,8 +1,9 @@
 <template>
   <a-drawer
+    root-class-name="apple-iap-ui apple-iap-dialog"
     v-model:open="vdata.open"
     title="Apple App 内购买"
-    width="72%"
+    width="min(1120px, 100vw)"
     :closable="true"
     :mask-closable="false"
     :body-style="{ paddingBottom: '84px' }"
@@ -81,7 +82,24 @@
             :loading="vdata.keyLoading"
             @rotate="rotatePrivateKey"
           />
-          <a-divider>安全依赖（只读）</a-divider>
+          <a-divider orientation="left">安全依赖</a-divider>
+          <a-alert
+            v-if="vdata.deployment.localSecurityInitialization"
+            type="info"
+            show-icon
+            class="load-error"
+            message="本地开发环境可自动补齐 Apple 根证书与两类随机密钥。已有材料保持不变，初始化后需重新验证与审核。"
+          >
+            <template #action>
+              <a-button
+                :loading="vdata.keyLoading"
+                :disabled="!vdata.exists || !canRotate || !canSave || !!vdata.loadError"
+                @click="initializeLocalSecurity"
+              >
+                初始化缺失依赖
+              </a-button>
+            </template>
+          </a-alert>
           <a-descriptions bordered size="small" :column="1">
             <a-descriptions-item label="Apple 根证书">
               {{ secretText(vdata.config.rootCertificates) }}
@@ -104,6 +122,7 @@
           />
           <AppleIapNotificationPanel
             :config="vdata.config"
+            :deployment="vdata.deployment"
             :one-time-url="vdata.oneTimeUrl"
             :disabled="!vdata.exists || !canRotate || !!vdata.loadError"
             :loading="vdata.notificationLoading"
@@ -128,11 +147,14 @@
 
 <script setup lang="ts">
 import { computed, getCurrentInstance, reactive, ref } from 'vue'
+import '../../appleIap/appleIap.less'
 import {
   confirmAppleIapNotificationUrl,
   decideAppleIapConfigAudit,
   deleteAppleIapConfig,
   getAppleIapConfig,
+  getAppleIapDeployment,
+  initializeAppleIapLocalSecurity,
   rotateAppleIapNotificationToken,
   rotateAppleIapPrivateKey,
   saveAppleIapConfig,
@@ -189,13 +211,17 @@ const vdata: any = reactive({
   form: emptyForm(),
   readinessReport: null,
   oneTimeUrl: null,
+  deployment: {},
 })
 const canEnable = computed(
   () => vdata.config.readinessState === 'READY' && vdata.config.auditState === 'APPROVED'
 )
+let scopeGeneration = 0
+let configRequest = 0
 
 async function show(appId, record, mchNo) {
   onClose()
+  const generation = scopeGeneration
   vdata.appId = appId
   vdata.mchNo = mchNo || (record && record.mchNo) || ''
   vdata.exists = false
@@ -203,21 +229,54 @@ async function show(appId, record, mchNo) {
   vdata.form = emptyForm()
   vdata.activeTab = 'identity'
   vdata.open = true
+  vdata.loading = true
+  vdata.deployment = {}
+  try {
+    const deployment = await getAppleIapDeployment()
+    if (generation !== scopeGeneration) return
+    vdata.deployment = deployment
+  } catch (error) {
+    if (generation !== scopeGeneration) return
+    showOperationError('部署信息读取失败', error)
+  }
+  if (generation !== scopeGeneration) return
   await loadConfig()
 }
 
+async function initializeLocalSecurity() {
+  vdata.keyLoading = true
+  try {
+    applyConfig(
+      await initializeAppleIapLocalSecurity(vdata.appId, vdata.mchNo, vdata.config.rowVersion)
+    )
+    vdata.readinessReport = null
+    $infoBox.message.success('本地安全依赖已补齐，请重新执行门禁检查')
+  } catch (error) {
+    showOperationError('安全依赖初始化失败', error)
+  } finally {
+    vdata.keyLoading = false
+  }
+}
+
 async function loadConfig() {
+  const generation = scopeGeneration
+  const request = ++configRequest
+  const { appId, mchNo } = vdata
+  const isCurrent = () => generation === scopeGeneration && request === configRequest && vdata.open
   if (!vdata.appId || !vdata.mchNo) {
     vdata.loadError = '缺少 appId 或 mchNo，无法建立 Manager 数据范围。'
+    vdata.loading = false
     return
   }
   vdata.loading = true
   vdata.loadError = ''
   try {
-    const config = await getAppleIapConfig(vdata.appId, vdata.mchNo)
+    const config = await getAppleIapConfig(appId, mchNo)
+    if (!isCurrent()) return
     applyConfig(config)
     vdata.exists = true
   } catch (error: any) {
+    if (!isCurrent()) return
     if (isNotFound(error)) {
       vdata.exists = false
       vdata.config = emptyConfig()
@@ -227,7 +286,7 @@ async function loadConfig() {
       vdata.loadError = '配置读取失败：' + safeError(error)
     }
   } finally {
-    vdata.loading = false
+    if (isCurrent()) vdata.loading = false
   }
 }
 
@@ -421,7 +480,14 @@ function showOperationError(prefix, error) {
 }
 function safeError(error) {
   const raw = typeof error === 'string' ? error : error && (error.msg || error.message)
-  return String(raw || '请求未完成')
+  const message = String(raw || '请求未完成')
+  if (/SECRET_PROVIDER_UNAVAILABLE|Apple IAP Secret\/KMS provider is unavailable/i.test(message)) {
+    return '服务端密钥存储未配置或不可用，请管理员配置后重新选择 P8 文件上传。'
+  }
+  if (/SECRET_WRITE_FAILED/i.test(message)) {
+    return '服务端无法保存密钥，请管理员检查密钥存储权限与可用性后重试。'
+  }
+  return message
     .replace(/-----BEGIN[\s\S]*?-----END[^-]*-----/g, '[REDACTED]')
     .replace(/[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[REDACTED_JWS]')
     .replace(/\b[A-Za-z0-9_-]{43}\b/g, '[REDACTED_TOKEN]')
@@ -454,6 +520,9 @@ function auditColor(state) {
   return { APPROVED: 'green', REJECTED: 'red', PENDING: 'orange' }[state] || 'default'
 }
 function onClose() {
+  scopeGeneration += 1
+  configRequest += 1
+  vdata.loading = false
   keyFormRef.value && keyFormRef.value.clearSecretSelection()
   vdata.oneTimeUrl = null
   vdata.readinessReport = null

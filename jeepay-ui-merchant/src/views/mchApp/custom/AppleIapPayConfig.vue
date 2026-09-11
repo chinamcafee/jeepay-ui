@@ -387,7 +387,14 @@ function showOperationError(prefix, error) {
 }
 function safeError(error) {
   const raw = typeof error === 'string' ? error : error && (error.msg || error.message)
-  return String(raw || '请求未完成')
+  const message = String(raw || '请求未完成')
+  if (/SECRET_PROVIDER_UNAVAILABLE|Apple IAP Secret\/KMS provider is unavailable/i.test(message)) {
+    return '服务端密钥存储未配置或不可用，请管理员配置后重新选择 P8 文件上传。'
+  }
+  if (/SECRET_WRITE_FAILED/i.test(message)) {
+    return '服务端无法保存密钥，请管理员检查密钥存储权限与可用性后重试。'
+  }
+  return message
     .replace(/-----BEGIN[\s\S]*?-----END[^-]*-----/g, '[REDACTED]')
     .replace(/[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[REDACTED_JWS]')
     .replace(/\b[A-Za-z0-9_-]{43}\b/g, '[REDACTED_TOKEN]')

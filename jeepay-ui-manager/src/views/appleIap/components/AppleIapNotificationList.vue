@@ -4,7 +4,12 @@
       <a-card class="section">
         <a-form layout="inline">
           <a-form-item label="环境">
-            <a-select v-model:value="notice.filters.environment" allow-clear style="width: 130px">
+            <a-select
+              v-model:value="notice.filters.environment"
+              placeholder="全部"
+              allow-clear
+              style="width: 130px"
+            >
               <a-select-option value="SANDBOX">Sandbox</a-select-option>
               <a-select-option value="PRODUCTION">Production</a-select-option>
             </a-select>
@@ -16,7 +21,12 @@
             <a-input v-model:value="notice.filters.transactionId" :maxlength="128" allow-clear />
           </a-form-item>
           <a-form-item label="处理状态">
-            <a-select v-model:value="notice.filters.state" allow-clear style="width: 130px">
+            <a-select
+              v-model:value="notice.filters.state"
+              placeholder="全部"
+              allow-clear
+              style="width: 130px"
+            >
               <a-select-option
                 v-for="item in noticeStateOptions"
                 :key="item.value"
@@ -115,6 +125,7 @@
           <a-form-item label="环境">
             <a-select
               v-model:value="consumption.filters.environment"
+              placeholder="全部"
               allow-clear
               style="width: 130px"
             >
@@ -131,7 +142,12 @@
             />
           </a-form-item>
           <a-form-item label="Apple 提交">
-            <a-select v-model:value="consumption.filters.state" allow-clear style="width: 140px">
+            <a-select
+              v-model:value="consumption.filters.state"
+              placeholder="全部"
+              allow-clear
+              style="width: 140px"
+            >
               <a-select-option
                 v-for="item in submitStateOptions"
                 :key="item.value"
@@ -144,6 +160,7 @@
           <a-form-item label="用户同意">
             <a-select
               v-model:value="consumption.filters.secondaryState"
+              placeholder="全部"
               allow-clear
               style="width: 130px"
             >

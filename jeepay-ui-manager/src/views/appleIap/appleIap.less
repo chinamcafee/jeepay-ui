@@ -1,0 +1,250 @@
+@import '../../less/color.less';
+
+// Apple 工作区和传送到 body 的抽屉共用同一套节奏，沿用 Jeepay 主题。
+.apple-iap-ui {
+  --iap-text: #25324b;
+  --iap-muted: #596380;
+  --iap-border: #e8edf4;
+  color: var(--iap-text);
+  .iap-page-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 0 0 20px;
+  }
+  h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  .iap-page-heading p {
+    margin: 6px 0 0;
+    color: var(--iap-muted);
+    overflow-wrap: anywhere;
+  }
+  .iap-back {
+    padding: 0;
+    margin-bottom: 8px;
+    height: auto;
+  }
+  .iap-divider {
+    margin: 0 12px;
+    color: #abb4c4;
+  }
+  .iap-workspace {
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(30, 50, 90, 0.04);
+  }
+  .iap-workspace > .ant-card-body {
+    // global.less 将所有卡片强制归零；只在 Apple 工作区恢复内边距。
+    padding: 24px !important;
+  }
+  .ant-tabs-nav {
+    margin-bottom: 24px;
+  }
+  .ant-tabs-tab {
+    padding: 14px 0;
+    font-weight: 500;
+  }
+  .ant-tabs-tab + .ant-tabs-tab {
+    margin-left: 28px;
+  }
+  .ant-form-inline {
+    row-gap: 16px;
+    column-gap: 20px;
+    margin-bottom: 20px;
+  }
+  .ant-form-inline .ant-form-item {
+    margin: 0;
+  }
+  .ant-form-inline .ant-input {
+    min-width: 180px;
+  }
+  .ant-form-item-label > label {
+    color: var(--iap-muted);
+  }
+  .ant-form-vertical .ant-form-item {
+    margin-bottom: 24px;
+  }
+  .ant-table-wrapper {
+    border: 1px solid var(--iap-border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .ant-table-thead > tr > th {
+    background: #f6f8fb;
+    font-weight: 600;
+    color: var(--iap-muted);
+  }
+  .ant-table.ant-table-small .ant-table-tbody > tr > td,
+  .ant-table.ant-table-small .ant-table-thead > tr > th {
+    padding: 14px 16px;
+  }
+  .ant-table-pagination.ant-pagination {
+    margin: 16px;
+  }
+  .ant-table-cell {
+    font-variant-numeric: tabular-nums;
+  }
+  .identifier {
+    margin-bottom: 0;
+    overflow-wrap: anywhere;
+    line-height: 1.6;
+  }
+  .secondary,
+  .secondary-id,
+  .minor-unit,
+  .field-help {
+    color: var(--iap-muted);
+    line-height: 1.6;
+  }
+  .section {
+    margin-bottom: 20px;
+  }
+  .ant-card.section {
+    border: 0;
+    border-radius: 6px;
+    background: #f6f8fb;
+  }
+  .ant-card.section > .ant-card-body {
+    padding: 16px 20px !important;
+  }
+  .ant-card.section .ant-form-inline {
+    margin-bottom: 0;
+  }
+  .ant-alert {
+    padding: 12px 16px;
+    border-radius: 6px;
+    line-height: 1.6;
+  }
+  .environment-card {
+    border-color: var(--iap-border);
+    border-radius: 8px;
+  }
+  .environment-card > .ant-card-head {
+    background: #f6f8fb;
+    padding: 0 20px;
+  }
+  .environment-card > .ant-card-body {
+    padding: 20px !important;
+  }
+  .environment-card .ant-card-small > .ant-card-body {
+    padding: 16px !important;
+  }
+  .ant-statistic-title {
+    color: var(--iap-muted);
+    font-size: 13px;
+  }
+  .ant-statistic-content {
+    font-size: 26px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .ant-empty {
+    margin: 48px 0;
+  }
+  .ant-descriptions-item-content {
+    overflow-wrap: anywhere;
+  }
+  .ant-divider-horizontal.ant-divider-with-text {
+    margin: 28px 0 20px;
+    font-size: 15px;
+  }
+  .ant-btn:focus-visible {
+    outline: 2px solid @jee-theme;
+    outline-offset: 3px;
+  }
+}
+.apple-iap-dialog {
+  .ant-drawer-header {
+    padding: 20px 24px;
+  }
+  .ant-drawer-title {
+    font-size: 18px;
+  }
+  .ant-drawer-body {
+    padding: 24px;
+  }
+  .ant-drawer-content-wrapper {
+    max-width: 100vw;
+  }
+  .ant-modal-body {
+    padding-top: 12px;
+  }
+  .status-strip {
+    padding: 20px;
+    border: 1px solid var(--iap-border);
+    border-radius: 8px;
+    background: #f6f8fb;
+    gap: 20px;
+  }
+  .status-strip .app-id {
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+  .status-strip .merchant-id {
+    color: var(--iap-muted);
+    margin-top: 6px;
+  }
+  .key-status {
+    margin-bottom: 24px;
+  }
+  .ant-descriptions-bordered .ant-descriptions-item-label {
+    width: 180px;
+  }
+  .ant-tabs-content-holder {
+    min-width: 0;
+  }
+}
+@media (max-width: 768px) {
+  .apple-iap-ui {
+    .iap-page-heading {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+    .iap-workspace > .ant-card-body {
+      padding: 16px !important;
+    }
+    .ant-form-inline {
+      display: flex;
+      flex-direction: column;
+    }
+    .ant-form-inline .ant-form-item {
+      width: 100%;
+    }
+    .ant-form-inline .ant-form-item-control {
+      min-width: 0;
+    }
+    .ant-form-inline .ant-input,
+    .ant-form-inline .ant-select {
+      width: 100% !important;
+      min-width: 0;
+    }
+    .ant-table-wrapper {
+      max-width: 100%;
+    }
+    .status-strip {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+  .apple-iap-dialog .ant-drawer-body {
+    padding: 16px;
+  }
+}
+@media (max-width: 480px) {
+  .apple-iap-dialog .ant-descriptions-bordered .ant-descriptions-item-label {
+    width: 112px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .apple-iap-ui *,
+  .apple-iap-ui *::after,
+  .apple-iap-ui *::before {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+  }
+}

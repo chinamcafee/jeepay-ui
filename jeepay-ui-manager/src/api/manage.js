@@ -347,6 +347,17 @@ export function rotateAppleIapPrivateKey (appId, mchNo, file, issuerId, keyId, r
   })
 }
 
+export function getAppleIapDeployment () {
+  return appleIapConfigRequest({ url: '/api/appleIap/deployment', method: 'GET' })
+}
+
+export function initializeAppleIapLocalSecurity (appId, mchNo, rowVersion) {
+  return appleIapConfigRequest({
+    url: APPLE_IAP_CONFIG_URL + '/' + encodeURIComponent(appId) + '/localSecurity/initialize',
+    method: 'POST', params: { mchNo, rowVersion }
+  })
+}
+
 export function rotateAppleIapNotificationToken (appId, mchNo, data) {
   return appleIapConfigRequest({
     url: APPLE_IAP_CONFIG_URL + '/' + encodeURIComponent(appId) + '/notificationTokens/rotate',

@@ -1,5 +1,5 @@
 <template>
-  <a-drawer v-model:open="vdata.open" title="Apple 消费信息请求" :width="820">
+  <a-drawer root-class-name="apple-iap-ui apple-iap-dialog" v-model:open="vdata.open" title="Apple 消费信息请求" :width="820">
     <a-alert v-if="vdata.error" type="error" show-icon :message="vdata.error" class="section">
       <template #action><a-button size="small" @click="load">重试</a-button></template>
     </a-alert>

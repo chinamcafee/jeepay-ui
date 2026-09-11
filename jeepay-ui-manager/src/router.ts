@@ -51,7 +51,8 @@ router.beforeEach((to: any, from, next) => {
 
           // https://ask.csdn.net/questions/7419202, 解决跳转白屏的问题
           if (to.matched.length == 0) {
-            router.push(to.path)
+            // 保留 Apple IAP 等详情页通过 query 携带的数据范围和当前 Tab。
+            router.replace(to.fullPath)
           }
           // next()
         })

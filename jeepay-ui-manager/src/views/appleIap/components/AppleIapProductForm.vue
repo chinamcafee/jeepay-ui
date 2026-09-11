@@ -1,5 +1,5 @@
 <template>
-  <a-drawer
+  <a-drawer root-class-name="apple-iap-ui apple-iap-dialog"
     v-model:open="vdata.open"
     :title="vdata.productMappingId ? '编辑 Apple IAP 商品映射' : '新增 Apple IAP 商品映射'"
     width="640px"

@@ -1,5 +1,5 @@
 <template>
-  <a-drawer
+  <a-drawer root-class-name="apple-iap-ui apple-iap-dialog"
     v-model:open="vdata.open"
     title="Apple IAP 交易详情"
     :width="920"

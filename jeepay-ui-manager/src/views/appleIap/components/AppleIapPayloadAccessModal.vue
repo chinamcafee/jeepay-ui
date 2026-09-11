@@ -1,5 +1,5 @@
 <template>
-  <a-modal
+  <a-modal wrap-class-name="apple-iap-ui apple-iap-dialog"
     v-model:open="vdata.open"
     title="受审计下载 Apple 敏感载荷"
     :confirm-loading="vdata.loading"

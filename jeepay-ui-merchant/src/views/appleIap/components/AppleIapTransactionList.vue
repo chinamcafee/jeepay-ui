@@ -11,7 +11,7 @@
         <a-form-item label="关键词">
           <a-input
             v-model:value="vdata.filters.keyword"
-            :maxlength="128"
+            :maxlength="100"
             allow-clear
             placeholder="Apple / Jeepay / 商品 ID"
             @press-enter="search"
